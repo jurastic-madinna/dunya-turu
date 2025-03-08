@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wheel of Fortune</title>
+  <style>
+    /* Set a full-page background image for the body */
+    body { 
+      text-align: center; 
+      font-family: sans-serif;
+      background: linear-gradient(to bottom, #f8e8a6, #f7d794);
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+    }
+    /* Optional: add a subtle background to the canvas itself */
+    #wheelCanvas { 
+      border: 2px solid #ccc; 
+      margin-top: 20px;
+      background: rgba(255,255,255,0.8);
+    }
+    #spinButton { 
+      margin-top: 20px; 
+      padding: 10px 20px; 
+      font-size: 16px; 
+    }
+    /* Pointer indicator above the canvas */
+    #pointer {
+      position: absolute;
+      left: 50%;
+      top: 50px;
+      transform: translateX(-50%);
+      font-size: 24px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wheel of Fortune</h1>
+  <!-- Background audio element (ensure the audio file is accessible) -->
+  <audio id="bgAudio" src="elvis-music.mp3" autoplay loop></audio>
+  
+  <div id="pointer">▼</div>
+  <canvas id="wheelCanvas" width="500" height="500"></canvas>
+  <br>
+  <button id="spinButton">Spin</button>
+  
+  <script>
+    // List of countries (or items) to display on the wheel.
+    const items = [
+      "Türkiye", "Almanya", "Rusya", "AFB", "Fransa",
+      "Avustralya", "Yeni Zelanda", "Singapur", "Malezya"
+    ];
+
+    // Define colors for the slices.
+    const sliceColors = ["#D9334D", "#882919", "#F4A795"];
+    const strokeColor = "#ffffff";
+
+    // Canvas setup.
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const outerRadius = Math.min(centerX, centerY) - 10;
+
+    // Optional: add a background pattern to the canvas.
+    // Replace with your chosen pattern image.
+    const bgPattern = new Image();
+    bgPattern.src = 'your-canvas-background-pattern.jpg';
+    bgPattern.onload = function() {
+      drawWheel();
+    };
+
+    // Animation variables.
+    let rotationAngle = 0; // in radians
+    let spinVelocity = 0;  // rotation speed per frame
+    let isSpinning = false;
+    const sliceAngle = (2 * Math.PI) / items.length;
+
+    // Draw the wheel along with a background pattern.
+    function drawWheel() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw the canvas background pattern if loaded.
+      if (bgPattern.complete && bgPattern.naturalWidth > 0) {
+		  ctx.drawImage(bgPattern, 0, 0, width, height);
+		} else {
+  // Optionally draw a fallback background or simply skip drawing the image.
+}
+
+      // Save context, translate to center, and rotate.
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rotationAngle);
+
+      // Draw each slice.
+      for (let i = 0; i < items.length; i++) {
+        const startAngle = i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+        ctx.fillStyle = sliceColors[i % sliceColors.length];
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, outerRadius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw slice border.
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw the text, aligned with each slice.
+        ctx.save();
+        ctx.fillStyle = "#000";
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.font = "bold 16px sans-serif";
+        ctx.fillText(items[i], outerRadius - 10, 10);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // Animation loop for spinning the wheel.
+    function animate() {
+      if (!isSpinning) return;
+      spinVelocity *= 0.99; // simulate friction
+      rotationAngle += spinVelocity;
+      drawWheel();
+      if (spinVelocity < 0.002) {
+        isSpinning = false;
+        determineWinner();
+        return;
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // Start spinning the wheel.
+    function spinWheel() {
+      if (isSpinning) return;
+      spinVelocity = Math.random() * 0.3 + 0.25;
+      isSpinning = true;
+      animate();
+    }
+
+    // Determine the winning slice based on the final rotation.
+    function determineWinner() {
+      const normalizedAngle = (2 * Math.PI - (rotationAngle % (2 * Math.PI))) % (2 * Math.PI);
+      const winningIndex = Math.floor(normalizedAngle / sliceAngle);
+      //alert("The winner is: " + items[winningIndex]);
+    }
+
+    // Fallback if bgPattern fails to load.
+    bgPattern.onerror = function() {
+      drawWheel();
+    };
+
+    // Initial draw (in case the pattern image is cached).
+    if (bgPattern.complete) {
+      drawWheel();
+    }
+
+    // Event listener for the spin button.
+    document.getElementById("spinButton").addEventListener("click", spinWheel);
+  </script>
+</body>
+</html>
